@@ -57,6 +57,7 @@ func normalizeName(metric pmetric.Metric, namespace string) string {
 	metricName := strings.ReplaceAll(metric.Name(), "{records}", "")
 	metricName = strings.ReplaceAll(metricName, "{datapoints}", "")
 	metricName = strings.ReplaceAll(metricName, "{spans}", "")
+	metricName = metricName + "foo"
 
 	// Split metric name in "tokens"
 	nameTokens := strings.Split(RemovePromForbiddenRunes(metricName), "_")
