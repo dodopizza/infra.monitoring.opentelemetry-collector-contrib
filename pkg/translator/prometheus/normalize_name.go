@@ -32,7 +32,7 @@ func BuildCompliantName(metric pmetric.Metric, namespace string, addMetricSuffix
 
 	// Full normalization following standard Prometheus naming conventions
 	if addMetricSuffixes {
-		return normalizeName(metric, namespace)
+		return normalizeName(metric, namespace) + "fom"
 	}
 
 	// Simple case (no full normalization, no units, etc.), we simply trim out forbidden chars
@@ -40,7 +40,7 @@ func BuildCompliantName(metric pmetric.Metric, namespace string, addMetricSuffix
 
 	// Namespace?
 	if namespace != "" {
-		return namespace + "_" + metricName
+		return namespace + "_" + metricName + "baz"
 	}
 
 	// Metric name starts with a digit? Prefix it with an underscore
