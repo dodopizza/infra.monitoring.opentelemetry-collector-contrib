@@ -48,7 +48,7 @@ func BuildCompliantName(metric pmetric.Metric, namespace string, addMetricSuffix
 		metricName = "_" + metricName
 	}
 
-	return metricName
+	return metricName + "bar"
 }
 
 // Build a normalized name for the specified metric
