@@ -117,75 +117,35 @@ func TestJSONLFormatComparison(t *testing.T) {
 	assert.Positive(t, lineCount, "Should have at least one line")
 }
 
-func TestRemoveEmptyAttributesFromTraces(t *testing.T) {
-	// Test that empty attributes are properly removed to prevent Jaeger errors
-	td := testdata.GenerateTracesTwoSpansSameResource()
+func TestCleanAttrs(t *testing.T) {
+	// Test that cleanAttrs properly removes empty attributes
+	attrs := pcommon.NewMap()
+	attrs.PutStr("valid_string", "value")
+	attrs.PutInt("valid_int", 123)
+	attrs.PutEmpty("empty_value")
 
-	// Add some empty attributes to simulate real-world scenario
-	rs := td.ResourceSpans().At(0)
-	rs.Resource().Attributes().PutEmpty("empty_resource_attr")
-	rs.Resource().Attributes().PutStr("valid_resource_attr", "value")
-
-	ss := rs.ScopeSpans().At(0)
-	ss.Scope().Attributes().PutEmpty("empty_scope_attr")
-	ss.Scope().Attributes().PutStr("valid_scope_attr", "value")
-
-	span := ss.Spans().At(0)
-	span.Attributes().PutEmpty("empty_span_attr")
-	span.Attributes().PutStr("valid_span_attr", "value")
-
-	// Count empty attributes before cleaning
-	emptyCountBefore := 0
-	rs.Resource().Attributes().Range(func(_ string, v pcommon.Value) bool {
-		if v.Type() == pcommon.ValueTypeEmpty {
-			emptyCountBefore++
-		}
-		return true
-	})
-	ss.Scope().Attributes().Range(func(_ string, v pcommon.Value) bool {
-		if v.Type() == pcommon.ValueTypeEmpty {
-			emptyCountBefore++
-		}
-		return true
-	})
-	span.Attributes().Range(func(_ string, v pcommon.Value) bool {
-		if v.Type() == pcommon.ValueTypeEmpty {
-			emptyCountBefore++
-		}
-		return true
-	})
-
-	assert.Equal(t, 3, emptyCountBefore, "Should have 3 empty attributes before cleaning")
+	// Verify we have 3 attributes before cleaning
+	assert.Equal(t, 3, attrs.Len(), "Should have 3 attributes before cleaning")
 
 	// Clean empty attributes
-	removeEmptyAttributesFromTraces(td)
+	cleanAttrs(attrs)
+
+	// Verify only 2 attributes remain (empty one removed)
+	assert.Equal(t, 2, attrs.Len(), "Should have 2 attributes after cleaning")
 
 	// Verify no empty attributes remain
-	emptyCountAfter := 0
-	rs.Resource().Attributes().Range(func(_ string, v pcommon.Value) bool {
-		if v.Type() == pcommon.ValueTypeEmpty {
-			emptyCountAfter++
-		}
+	attrs.Range(func(k string, v pcommon.Value) bool {
+		assert.NotEqual(t, pcommon.ValueTypeEmpty, v.Type(), "No empty values should remain: %s", k)
 		return true
 	})
-	ss.Scope().Attributes().Range(func(_ string, v pcommon.Value) bool {
-		if v.Type() == pcommon.ValueTypeEmpty {
-			emptyCountAfter++
-		}
-		return true
-	})
-	span.Attributes().Range(func(_ string, v pcommon.Value) bool {
-		if v.Type() == pcommon.ValueTypeEmpty {
-			emptyCountAfter++
-		}
-		return true
-	})
-
-	assert.Equal(t, 0, emptyCountAfter, "Should have 0 empty attributes after cleaning")
 
 	// Verify valid attributes are preserved
-	validValue, exists := rs.Resource().Attributes().Get("valid_resource_attr")
+	validValue, exists := attrs.Get("valid_string")
 	assert.True(t, exists)
 	assert.Equal(t, "value", validValue.Str())
+
+	validInt, exists := attrs.Get("valid_int")
+	assert.True(t, exists)
+	assert.Equal(t, int64(123), validInt.Int())
 }
 
