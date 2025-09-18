@@ -148,7 +148,7 @@ func TestMarshalTraces(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m, err := newMarshaller(&Config{Formats: &Formats{Metrics: tt.formatType, Logs: formatTypeJSON, Traces: formatTypeJSON}, Encodings: &Encodings{}}, componenttest.NewNopHost())
+			m, err := newMarshaller(&Config{Formats: &Formats{Metrics: formatTypeJSON, Logs: formatTypeJSON, Traces: tt.formatType}, Encodings: &Encodings{}}, componenttest.NewNopHost())
 			require.NoError(t, err)
 
 			data, err := m.marshalTraces(tt.traces)

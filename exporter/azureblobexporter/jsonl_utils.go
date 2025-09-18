@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-// Compile regex patterns once at package level for performance
 var (
 	nullFieldRegex             = regexp.MustCompile(`"[^"]+"\s*:\s*null\s*,?\s*`)
 	trailingCommaInObjectRegex = regexp.MustCompile(`,\s*}`)
@@ -29,7 +28,6 @@ func removeNullValues(data []byte) []byte {
 	return result
 }
 
-// cleanAttrs removes empty attributes from a pcommon.Map to prevent Jaeger "invalid tag type in <nil>" errors
 func cleanAttrs(attrs pcommon.Map) {
 	attrs.RemoveIf(func(_ string, v pcommon.Value) bool {
 		return v.Type() == pcommon.ValueTypeEmpty

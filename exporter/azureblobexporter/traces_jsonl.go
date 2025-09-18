@@ -70,4 +70,3 @@ func (*tracesJSONLMarshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
 
 	return buf.Bytes(), nil
 }
-
