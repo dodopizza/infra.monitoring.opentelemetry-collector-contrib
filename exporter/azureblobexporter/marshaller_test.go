@@ -71,6 +71,30 @@ func TestNewMarshaller(t *testing.T) {
 			shouldError: false,
 		},
 		{
+			name: "valid jsonl format for metrics",
+			config: &Config{
+				Formats: &Formats{
+					Logs:    formatTypeJSON,
+					Metrics: formatTypeJSONL,
+					Traces:  formatTypeProto,
+				},
+				Encodings: &Encodings{},
+			},
+			shouldError: false,
+		},
+		{
+			name: "valid jsonl format for all",
+			config: &Config{
+				Formats: &Formats{
+					Logs:    formatTypeJSONL,
+					Metrics: formatTypeJSONL,
+					Traces:  formatTypeJSONL,
+				},
+				Encodings: &Encodings{},
+			},
+			shouldError: false,
+		},
+		{
 			name: "invalid format",
 			config: &Config{
 				Formats: &Formats{
@@ -115,6 +139,11 @@ func TestMarshalTraces(t *testing.T) {
 			formatType: formatTypeProto,
 			traces:     testdata.GenerateTracesTwoSpansSameResource(),
 		},
+		{
+			name:       "jsonl format",
+			formatType: formatTypeJSONL,
+			traces:     testdata.GenerateTracesTwoSpansSameResource(),
+		},
 	}
 
 	for _, tt := range tests {
@@ -144,6 +173,11 @@ func TestMarshalMetrics(t *testing.T) {
 		{
 			name:       "proto format",
 			formatType: formatTypeProto,
+			metrics:    testdata.GenerateMetricsTwoMetrics(),
+		},
+		{
+			name:       "jsonl format",
+			formatType: formatTypeJSONL,
 			metrics:    testdata.GenerateMetricsTwoMetrics(),
 		},
 	}

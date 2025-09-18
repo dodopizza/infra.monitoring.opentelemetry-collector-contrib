@@ -15,11 +15,9 @@ func (*tracesJSONLMarshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
 	marshaler := &ptrace.JSONMarshaler{}
 	var buf bytes.Buffer
 
-	// Reuse envelope structures for performance - avoid per-span allocations
 	tempTd := ptrace.NewTraces()
 	tempRs := tempTd.ResourceSpans().AppendEmpty()
 	tempSs := tempRs.ScopeSpans().AppendEmpty()
-	// Create single span slot and reuse it (no per-span allocations)
 	tempSpans := tempSs.Spans()
 	tempSpans.EnsureCapacity(1)
 	if tempSpans.Len() == 0 {
@@ -30,7 +28,6 @@ func (*tracesJSONLMarshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
 
-		// Copy resource once per ResourceSpans and clean empty attributes
 		rs.Resource().CopyTo(tempRs.Resource())
 		cleanAttrs(tempRs.Resource().Attributes())
 		tempRs.SetSchemaUrl(rs.SchemaUrl())
@@ -39,7 +36,6 @@ func (*tracesJSONLMarshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
 		for j := 0; j < sss.Len(); j++ {
 			ss := sss.At(j)
 
-			// Copy scope once per ScopeSpans and clean empty attributes
 			ss.Scope().CopyTo(tempSs.Scope())
 			cleanAttrs(tempSs.Scope().Attributes())
 			tempSs.SetSchemaUrl(ss.SchemaUrl())
@@ -48,11 +44,9 @@ func (*tracesJSONLMarshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 
-				// Reuse the single span slot - no allocations
 				span.CopyTo(tempSpans.At(0))
 				tempSpan := tempSpans.At(0)
 
-				// Clean empty attributes from span, events, and links
 				cleanAttrs(tempSpan.Attributes())
 				events := tempSpan.Events()
 				for l := 0; l < events.Len(); l++ {

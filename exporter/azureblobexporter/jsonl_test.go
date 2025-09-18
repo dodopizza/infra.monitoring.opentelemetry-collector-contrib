@@ -158,3 +158,76 @@ func TestTracesJSONLEmpty(t *testing.T) {
 	assert.Empty(t, result)
 }
 
+func TestMetricsJSONLWithEmptyAttributes(t *testing.T) {
+	md := testdata.GenerateMetricsTwoMetrics()
+	rm := md.ResourceMetrics().At(0)
+	rm.Resource().Attributes().PutEmpty("empty_attr")
+	rm.Resource().Attributes().PutStr("valid_attr", "value")
+
+	sm := rm.ScopeMetrics().At(0)
+	sm.Scope().Attributes().PutEmpty("empty_scope")
+
+	metric := sm.Metrics().At(0)
+	if metric.Type() == pmetric.MetricTypeGauge {
+		dps := metric.Gauge().DataPoints()
+		if dps.Len() > 0 {
+			dps.At(0).Attributes().PutEmpty("empty_dp")
+		}
+	}
+
+	marshaler := &metricsJSONLMarshaler{}
+	result, err := marshaler.MarshalMetrics(md)
+	require.NoError(t, err)
+	require.NotEmpty(t, result)
+
+	lines := strings.Split(strings.TrimSpace(string(result)), "\n")
+	for _, line := range lines {
+		assert.NotContains(t, line, "null")
+		var parsed map[string]any
+		err := json.Unmarshal([]byte(line), &parsed)
+		require.NoError(t, err)
+	}
+}
+
+func TestMetricsJSONLEmpty(t *testing.T) {
+	md := pmetric.NewMetrics()
+	marshaler := &metricsJSONLMarshaler{}
+	result, err := marshaler.MarshalMetrics(md)
+	require.NoError(t, err)
+	assert.Empty(t, result)
+}
+
+func TestLogsJSONLWithEmptyAttributes(t *testing.T) {
+	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
+	rl := ld.ResourceLogs().At(0)
+	rl.Resource().Attributes().PutEmpty("empty_attr")
+	rl.Resource().Attributes().PutStr("valid_attr", "value")
+
+	sl := rl.ScopeLogs().At(0)
+	sl.Scope().Attributes().PutEmpty("empty_scope")
+
+	lr := sl.LogRecords().At(0)
+	lr.Attributes().PutEmpty("empty_log")
+
+	marshaler := &logsJSONLMarshaler{}
+	result, err := marshaler.MarshalLogs(ld)
+	require.NoError(t, err)
+	require.NotEmpty(t, result)
+
+	lines := strings.Split(strings.TrimSpace(string(result)), "\n")
+	for _, line := range lines {
+		assert.NotContains(t, line, "null")
+		var parsed map[string]any
+		err := json.Unmarshal([]byte(line), &parsed)
+		require.NoError(t, err)
+	}
+}
+
+func TestLogsJSONLEmpty(t *testing.T) {
+	ld := plog.NewLogs()
+	marshaler := &logsJSONLMarshaler{}
+	result, err := marshaler.MarshalLogs(ld)
+	require.NoError(t, err)
+	assert.Empty(t, result)
+}
+

@@ -12,27 +12,39 @@ func (m *logsJSONLMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	marshaler := &plog.JSONMarshaler{}
 	var buf bytes.Buffer
 
-	rls := ld.ResourceLogs()
+	tempLd := plog.NewLogs()
+	tempRl := tempLd.ResourceLogs().AppendEmpty()
+	tempSl := tempRl.ScopeLogs().AppendEmpty()
+	tempLrs := tempSl.LogRecords()
+	tempLrs.EnsureCapacity(1)
+	if tempLrs.Len() == 0 {
+		tempLrs.AppendEmpty()
+	}
 
+	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
-		resource := rl.Resource()
+
+		rl.Resource().CopyTo(tempRl.Resource())
+		cleanAttrs(tempRl.Resource().Attributes())
+		tempRl.SetSchemaUrl(rl.SchemaUrl())
 
 		sls := rl.ScopeLogs()
 		for j := 0; j < sls.Len(); j++ {
 			sl := sls.At(j)
-			scope := sl.Scope()
+
+			sl.Scope().CopyTo(tempSl.Scope())
+			cleanAttrs(tempSl.Scope().Attributes())
+			tempSl.SetSchemaUrl(sl.SchemaUrl())
 
 			lrs := sl.LogRecords()
 			for k := 0; k < lrs.Len(); k++ {
 				lr := lrs.At(k)
 
-				tempLd := plog.NewLogs()
-				tempRl := tempLd.ResourceLogs().AppendEmpty()
-				resource.CopyTo(tempRl.Resource())
-				tempSl := tempRl.ScopeLogs().AppendEmpty()
-				scope.CopyTo(tempSl.Scope())
-				lr.CopyTo(tempSl.LogRecords().AppendEmpty())
+				lr.CopyTo(tempLrs.At(0))
+				tempLr := tempLrs.At(0)
+
+				cleanAttrs(tempLr.Attributes())
 
 				jsonBytes, err := marshaler.MarshalLogs(tempLd)
 				if err != nil {
