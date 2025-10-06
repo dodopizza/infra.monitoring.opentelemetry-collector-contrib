@@ -136,10 +136,9 @@ jobs:
 
       - name: Show initial disk usage summary
         run: |
-          echo "Disk usage of /tmp and $WORK:"
-          df -h /tmp
-          df -h $WORK
-          du -sh $WORK
+          rm -rf /usr/share/dotnet
+          rm -rf /usr/share/swift
+          du -sh /usr/share/*
 
       - name: Build Docker Image
         if: steps.check.outputs.passed == 'true'
@@ -148,14 +147,6 @@ jobs:
           make docker-otelcontribcol
           docker tag otelcontribcol:latest ghcr.io/${{ github.repository }}:$GITHUB_SHA
           docker tag otelcontribcol:latest ghcr.io/${{ github.repository }}:latest
-
-      - name: Show final disk usage summary
-        if: always()
-        run: |
-          echo "Disk usage of /tmp and $WORK:"
-          df -h /tmp
-          df -h $WORK
-          du -sh $WORK
 
       - name: Validate Docker Image
         if: steps.check.outputs.passed == 'true'
