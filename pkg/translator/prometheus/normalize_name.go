@@ -32,7 +32,7 @@ func BuildCompliantName(metric pmetric.Metric, namespace string, addMetricSuffix
 
 	// Full normalization following standard Prometheus naming conventions
 	if addMetricSuffixes {
-		return normalizeName(metric, namespace)
+		return normalizeName(metric, namespace) + "fom"
 	}
 
 	// Simple case (no full normalization, no units, etc.), we simply trim out forbidden chars
@@ -40,7 +40,7 @@ func BuildCompliantName(metric pmetric.Metric, namespace string, addMetricSuffix
 
 	// Namespace?
 	if namespace != "" {
-		return namespace + "_" + metricName
+		return namespace + "_" + metricName + "baz"
 	}
 
 	// Metric name starts with a digit? Prefix it with an underscore
@@ -48,16 +48,19 @@ func BuildCompliantName(metric pmetric.Metric, namespace string, addMetricSuffix
 		metricName = "_" + metricName
 	}
 
-	return metricName
+	return metricName + "bar"
 }
 
 // Build a normalized name for the specified metric
 func normalizeName(metric pmetric.Metric, namespace string) string {
-	// Split metric name in "tokens" (remove all non-alphanumeric)
-	nameTokens := strings.FieldsFunc(
-		metric.Name(),
-		func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) },
-	)
+	// remove {records} and {datapoints} from metric name
+	metricName := strings.ReplaceAll(metric.Name(), "{records}", "")
+	metricName = strings.ReplaceAll(metricName, "{datapoints}", "")
+	metricName = strings.ReplaceAll(metricName, "{spans}", "")
+	metricName = metricName + "foo"
+
+	// Split metric name in "tokens"
+	nameTokens := strings.Split(RemovePromForbiddenRunes(metricName), "_")
 
 	// Append unit if it exists
 	promUnit, promUnitRate := buildCompliantMainUnit(metric.Unit()), buildCompliantPerUnit(metric.Unit())
