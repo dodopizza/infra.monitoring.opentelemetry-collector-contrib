@@ -139,8 +139,8 @@ jobs:
           echo "=== Initial Disk Usage (df -h) ==="
           df -h
           echo ""
-          echo "=== Top 20 largest directories (du -xh --max-depth=3 | sort -hr | head -20) ==="
-          sudo du -xh / --max-depth=3 2>/dev/null | sort -hr | head -20
+          echo "=== Top 20 largest directories (du -xh /home /usr /var /opt /tmp --max-depth=2 | sort -hr | head -20) ==="
+          sudo du -xh /home /usr /var /opt /tmp --max-depth=2 2>/dev/null | sort -hr | head -20
 
       - name: Build Docker Image
         if: steps.check.outputs.passed == 'true'
@@ -157,15 +157,7 @@ jobs:
           df -h
           echo ""
           echo "=== Top 20 largest directories after run ==="
-          sudo du -xh / --max-depth=3 2>/dev/null | sort -hr | head -20
-          echo ""
-          echo "=== /home, /usr, and /var specific breakdowns ==="
-          echo "--- /home ---"
-          sudo du -xh /home --max-depth=2 2>/dev/null | sort -hr | head -20
-          echo "--- /usr ---"
-          sudo du -xh /usr --max-depth=2 2>/dev/null | sort -hr | head -20
-          echo "--- /var ---"
-          sudo du -xh /var --max-depth=2 2>/dev/null | sort -hr | head -20
+          sudo du -xh /home /usr /var /opt /tmp --max-depth=2 2>/dev/null | sort -hr | head -20
 
       - name: Validate Docker Image
         if: steps.check.outputs.passed == 'true'
