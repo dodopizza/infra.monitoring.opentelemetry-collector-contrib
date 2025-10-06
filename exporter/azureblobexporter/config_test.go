@@ -55,7 +55,7 @@ func TestLoadConfig(t *testing.T) {
 					Metrics: formatTypeJSON,
 					Traces:  formatTypeJSON,
 				},
-				Encodings:     &Encodings{},
+				Encodings:     Encodings{},
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				AppendBlob: AppendBlob{
 					Enabled:   false,
@@ -86,7 +86,8 @@ func TestLoadConfig(t *testing.T) {
 					Logs:    formatTypeProto,
 					Metrics: formatTypeProto,
 					Traces:  formatTypeProto,
-				Encodings:     &Encodings{},
+				},
+				Encodings:     Encodings{},
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 			},
 		},
@@ -115,7 +116,7 @@ func TestLoadConfig(t *testing.T) {
 					Metrics: formatTypeJSON,
 					Traces:  formatTypeJSON,
 				},
-				Encodings:     &Encodings{},
+				Encodings:     Encodings{},
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				AppendBlob: AppendBlob{
 					Enabled:   false,
@@ -150,7 +151,7 @@ func TestLoadConfig(t *testing.T) {
 					Metrics: formatTypeJSON,
 					Traces:  formatTypeJSON,
 				},
-				Encodings:     &Encodings{},
+				Encodings:     Encodings{},
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				AppendBlob: AppendBlob{
 					Enabled:   false,
@@ -182,7 +183,7 @@ func TestLoadConfig(t *testing.T) {
 					Metrics: formatTypeJSON,
 					Traces:  formatTypeJSON,
 				},
-				Encodings:     &Encodings{},
+				Encodings:     Encodings{},
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				AppendBlob: AppendBlob{
 					Enabled:   false,
