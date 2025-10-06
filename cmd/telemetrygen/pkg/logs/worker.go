@@ -18,21 +18,24 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
+
+	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
 type worker struct {
-	running        *atomic.Bool    // pointer to shared flag that indicates it's time to stop the test
-	numLogs        int             // how many logs the worker has to generate (only when duration==0)
-	body           string          // the body of the log
-	severityNumber log.Severity    // the severityNumber of the log
-	severityText   string          // the severityText of the log
-	totalDuration  time.Duration   // how long to run the test for (overrides `numLogs`)
-	limitPerSecond rate.Limit      // how many logs per second to generate
-	wg             *sync.WaitGroup // notify when done
-	logger         *zap.Logger     // logger
-	index          int             // worker index
-	traceID        string          // traceID string
-	spanID         string          // spanID string
+	running        *atomic.Bool          // pointer to shared flag that indicates it's time to stop the test
+	numLogs        int                   // how many logs the worker has to generate (only when duration==0)
+	body           string                // the body of the log
+	severityNumber log.Severity          // the severityNumber of the log
+	severityText   string                // the severityText of the log
+	totalDuration  types.DurationWithInf // how long to run the test for (overrides `numLogs`)
+	limitPerSecond rate.Limit            // how many logs per second to generate
+	wg             *sync.WaitGroup       // notify when done
+	logger         *zap.Logger           // logger
+	index          int                   // worker index
+	traceID        string                // traceID string
+	spanID         string                // spanID string
+	allowFailures  bool                  // whether to continue on export failures
 }
 
 func (w worker) simulateLogs(res *resource.Resource, exporter sdklog.Exporter, telemetryAttributes []attribute.KeyValue) {
@@ -78,7 +81,11 @@ func (w worker) simulateLogs(res *resource.Resource, exporter sdklog.Exporter, t
 		}
 
 		if err := exporter.Export(context.Background(), logs); err != nil {
-			w.logger.Fatal("exporter failed", zap.Error(err))
+			if w.allowFailures {
+				w.logger.Error("exporter failed, continuing due to --allow-export-failures", zap.Error(err))
+			} else {
+				w.logger.Fatal("exporter failed", zap.Error(err))
+			}
 		}
 
 		i++

@@ -34,6 +34,7 @@ type BlobNameFormat struct {
 	TracesFormat             string            `mapstructure:"traces_format"`
 	SerialNumRange           int64             `mapstructure:"serial_num_range"`
 	SerialNumBeforeExtension bool              `mapstructure:"serial_num_before_extension"`
+	TemplateEnabled          bool              `mapstructure:"template_enabled"`
 	Params                   map[string]string `mapstructure:"params"`
 }
 
@@ -78,20 +79,20 @@ type Config struct {
 	URL string `mapstructure:"url"`
 
 	// A container organizes a set of blobs, similar to a directory in a file system.
-	Container *TelemetryConfig `mapstructure:"container"`
-	Auth      *Authentication  `mapstructure:"auth"`
+	Container TelemetryConfig `mapstructure:"container"`
+	Auth      Authentication  `mapstructure:"auth"`
 
 	// BlobNameFormat is the format of the blob name. It controls the uploaded blob name, e.g. "2006/01/02/metrics_15_04_05.json"
-	BlobNameFormat *BlobNameFormat `mapstructure:"blob_name_format"`
+	BlobNameFormat BlobNameFormat `mapstructure:"blob_name_format"`
 
 	// Formats is the format of encoded telemetry data. Supported values are json and proto.
 	Formats *Formats `mapstructure:"formats"`
 
 	// AppendBlob configures append blob behavior
-	AppendBlob *AppendBlob `mapstructure:"append_blob"`
+	AppendBlob AppendBlob `mapstructure:"append_blob"`
 
 	// Encoding extension to apply for logs/metrics/traces. If present, overrides the marshaler configuration option and format.
-	Encodings *Encodings `mapstructure:"encodings"`
+	Encodings Encodings `mapstructure:"encodings"`
 
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 }
@@ -124,11 +125,11 @@ func (c *Config) Validate() error {
 		return errors.New("unknown logs format type: " + c.Formats.Logs)
 	}
 
-	if c.Formats.Metrics != formatTypeJSON && c.Formats.Metrics != formatTypeProto {
+	if c.Formats.Metrics != formatTypeJSON && c.Formats.Metrics != formatTypeProto && c.Formats.Metrics != formatTypeJSONL {
 		return errors.New("unknown metrics format type: " + c.Formats.Metrics)
 	}
 
-	if c.Formats.Traces != formatTypeJSON && c.Formats.Traces != formatTypeProto {
+	if c.Formats.Traces != formatTypeJSON && c.Formats.Traces != formatTypeProto && c.Formats.Traces != formatTypeJSONL {
 		return errors.New("unknown traces format type: " + c.Formats.Traces)
 	}
 

@@ -32,18 +32,18 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "sp"),
 			expected: &Config{
 				URL: "https://fakeaccount.blob.core.windows.net/",
-				Auth: &Authentication{
+				Auth: Authentication{
 					Type:         "service_principal",
 					TenantID:     "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d",
 					ClientID:     "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d",
 					ClientSecret: "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d",
 				},
-				Container: &TelemetryConfig{
+				Container: TelemetryConfig{
 					Metrics: "test",
 					Logs:    "test",
 					Traces:  "test",
 				},
-				BlobNameFormat: &BlobNameFormat{
+				BlobNameFormat: BlobNameFormat{
 					MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
 					LogsFormat:     "2006/01/02/logs_15_04_05.json",
 					TracesFormat:   "2006/01/02/traces_15_04_05.json",
@@ -55,9 +55,9 @@ func TestLoadConfig(t *testing.T) {
 					Metrics: formatTypeJSON,
 					Traces:  formatTypeJSON,
 				},
-				Encodings:     &Encodings{},
+				Encodings:     Encodings{},
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				AppendBlob: &AppendBlob{
+				AppendBlob: AppendBlob{
 					Enabled:   false,
 					Separator: "\n",
 				},
@@ -67,15 +67,15 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "smi"),
 			expected: &Config{
 				URL: "https://fakeaccount.blob.core.windows.net/",
-				Auth: &Authentication{
+				Auth: Authentication{
 					Type: "system_managed_identity",
 				},
-				Container: &TelemetryConfig{
+				Container: TelemetryConfig{
 					Metrics: "test",
 					Logs:    "test",
 					Traces:  "test",
 				},
-				BlobNameFormat: &BlobNameFormat{
+				BlobNameFormat: BlobNameFormat{
 					MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
 					LogsFormat:     "2006/01/02/logs_15_04_05.json",
 					TracesFormat:   "2006/01/02/traces_15_04_05.json",
@@ -87,28 +87,24 @@ func TestLoadConfig(t *testing.T) {
 					Metrics: formatTypeProto,
 					Traces:  formatTypeProto,
 				},
-				Encodings:     &Encodings{},
+				Encodings:     Encodings{},
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				AppendBlob: &AppendBlob{
-					Enabled:   false,
-					Separator: "\n",
-				},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "umi"),
 			expected: &Config{
 				URL: "https://fakeaccount.blob.core.windows.net/",
-				Auth: &Authentication{
+				Auth: Authentication{
 					Type:     "user_managed_identity",
 					ClientID: "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d",
 				},
-				Container: &TelemetryConfig{
+				Container: TelemetryConfig{
 					Metrics: "test",
 					Logs:    "test",
 					Traces:  "test",
 				},
-				BlobNameFormat: &BlobNameFormat{
+				BlobNameFormat: BlobNameFormat{
 					MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
 					LogsFormat:     "2006/01/02/logs_15_04_05.json",
 					TracesFormat:   "2006/01/02/traces_15_04_05.json",
@@ -120,9 +116,9 @@ func TestLoadConfig(t *testing.T) {
 					Metrics: formatTypeJSON,
 					Traces:  formatTypeJSON,
 				},
-				Encodings:     &Encodings{},
+				Encodings:     Encodings{},
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				AppendBlob: &AppendBlob{
+				AppendBlob: AppendBlob{
 					Enabled:   false,
 					Separator: "\n",
 				},
@@ -132,18 +128,18 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "wif"),
 			expected: &Config{
 				URL: "https://fakeaccount.blob.core.windows.net/",
-				Auth: &Authentication{
+				Auth: Authentication{
 					Type:               "workload_identity",
 					ClientID:           "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d",
 					TenantID:           "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d",
 					FederatedTokenFile: "/path/to/federated/token/file",
 				},
-				Container: &TelemetryConfig{
+				Container: TelemetryConfig{
 					Metrics: "test",
 					Logs:    "test",
 					Traces:  "test",
 				},
-				BlobNameFormat: &BlobNameFormat{
+				BlobNameFormat: BlobNameFormat{
 					MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
 					LogsFormat:     "2006/01/02/logs_15_04_05.json",
 					TracesFormat:   "2006/01/02/traces_15_04_05.json",
@@ -155,9 +151,9 @@ func TestLoadConfig(t *testing.T) {
 					Metrics: formatTypeJSON,
 					Traces:  formatTypeJSON,
 				},
-				Encodings:     &Encodings{},
+				Encodings:     Encodings{},
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				AppendBlob: &AppendBlob{
+				AppendBlob: AppendBlob{
 					Enabled:   false,
 					Separator: "\n",
 				},
@@ -166,16 +162,16 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "conn-string"),
 			expected: &Config{
-				Auth: &Authentication{
+				Auth: Authentication{
 					Type:             "connection_string",
 					ConnectionString: "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net",
 				},
-				Container: &TelemetryConfig{
+				Container: TelemetryConfig{
 					Metrics: "test",
 					Logs:    "test",
 					Traces:  "test",
 				},
-				BlobNameFormat: &BlobNameFormat{
+				BlobNameFormat: BlobNameFormat{
 					MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
 					LogsFormat:     "2006/01/02/logs_15_04_05.json",
 					TracesFormat:   "2006/01/02/traces_15_04_05.json",
@@ -187,9 +183,9 @@ func TestLoadConfig(t *testing.T) {
 					Metrics: formatTypeJSON,
 					Traces:  formatTypeJSON,
 				},
-				Encodings:     &Encodings{},
+				Encodings:     Encodings{},
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				AppendBlob: &AppendBlob{
+				AppendBlob: AppendBlob{
 					Enabled:   false,
 					Separator: "\n",
 				},

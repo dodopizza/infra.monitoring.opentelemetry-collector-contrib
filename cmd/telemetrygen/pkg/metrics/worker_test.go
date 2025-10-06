@@ -20,6 +20,7 @@ import (
 	"golang.org/x/time/rate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
 const (
@@ -92,12 +93,28 @@ func TestFixedNumberOfMetrics(t *testing.T) {
 	require.Len(t, m.rms, 5)
 }
 
+func TestDurationInf(t *testing.T) {
+	cfg := &Config{
+		Config: common.Config{
+			TotalDuration: types.DurationWithInf(-1),
+		},
+		MetricType: MetricTypeSum,
+	}
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+
+	// test
+	require.NoError(t, run(cfg, expFunc, zap.NewNop()))
+}
+
 func TestRateOfMetrics(t *testing.T) {
 	// arrange
 	cfg := &Config{
 		Config: common.Config{
 			Rate:          10,
-			TotalDuration: time.Second / 2,
+			TotalDuration: types.DurationWithInf(time.Second / 2),
 			WorkerCount:   1,
 		},
 		MetricType: MetricTypeSum,
@@ -187,7 +204,7 @@ func TestUnthrottled(t *testing.T) {
 	// arrange
 	cfg := &Config{
 		Config: common.Config{
-			TotalDuration: 1 * time.Second,
+			TotalDuration: types.DurationWithInf(1 * time.Second),
 			WorkerCount:   1,
 		},
 		MetricType: MetricTypeSum,
@@ -392,7 +409,7 @@ func TestValidate(t *testing.T) {
 		wantErrMessage string
 	}{
 		{
-			name: "No duration or NumMetrics",
+			name: "No duration, NumMetrics, or Continuous",
 			cfg: &Config{
 				Config: common.Config{
 					WorkerCount: 1,
@@ -599,4 +616,48 @@ func TestUniqueSumTimeseries(t *testing.T) {
 		assert.True(t, exist, "it should have the timebox attribute")
 		assert.LessOrEqual(t, actualValue.AsInt64(), int64(4), "it should be between 0 and 4")
 	}
+}
+
+// TestExponentialHistogramMetricGeneration tests ExponentialHistogram metric generation
+func TestExponentialHistogramMetricGeneration(t *testing.T) {
+	// arrange
+	m := &mockExporter{}
+	cfg := Config{
+		Config: common.Config{
+			WorkerCount: 1,
+		},
+		NumMetrics: 1,
+		MetricName: "test_exp_hist",
+		MetricType: MetricTypeExponentialHistogram,
+	}
+	logger := zap.NewNop()
+
+	// act
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+	require.NoError(t, run(&cfg, expFunc, logger))
+
+	time.Sleep(100 * time.Millisecond)
+
+	// assert
+	require.Len(t, m.rms, 1)
+	ms := m.rms[0].ScopeMetrics[0].Metrics[0]
+
+	// Verify it's an ExponentialHistogram
+	expHist, ok := ms.Data.(metricdata.ExponentialHistogram[int64])
+	require.True(t, ok, "Expected ExponentialHistogram metric type")
+
+	// Verify data point structure
+	require.Len(t, expHist.DataPoints, 1)
+	dp := expHist.DataPoints[0]
+	assert.Equal(t, "test_exp_hist", ms.Name)
+	assert.Positive(t, dp.Count)
+	assert.Positive(t, dp.Sum)
+	assert.Equal(t, uint64(0), dp.ZeroCount)
+	assert.Equal(t, 0.0, dp.ZeroThreshold)
+
+	// Verify buckets exist
+	assert.NotNil(t, dp.PositiveBucket)
+	assert.NotNil(t, dp.NegativeBucket)
 }

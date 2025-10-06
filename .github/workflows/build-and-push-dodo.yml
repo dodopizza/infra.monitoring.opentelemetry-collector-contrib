@@ -134,6 +134,12 @@ jobs:
         id: check
         run: ./.github/workflows/scripts/verify-dist-files-exist.sh
 
+        # Trying to fix error 'compile: writing output: write $WORK/b4963/_pkg_.a: no space left on device'
+      - name: Free up space
+        run: |
+          rm -rf /usr/share/dotnet
+          rm -rf /usr/share/swift
+
       - name: Build Docker Image
         if: steps.check.outputs.passed == 'true'
         run: |
