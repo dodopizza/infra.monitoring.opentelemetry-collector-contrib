@@ -136,11 +136,10 @@ jobs:
 
       - name: Show initial disk usage summary
         run: |
-          echo "=== Initial Disk Usage (df -h) ==="
-          df -h
-          echo ""
-          echo "=== Top 20 largest directories (du -xh /home /usr /var /opt /tmp --max-depth=2 | sort -hr | head -20) ==="
-          sudo du -xh /home /usr /var /opt /tmp --max-depth=2 2>/dev/null | sort -hr | head -20
+          echo "Disk usage of /tmp and $WORK:"
+          df -h /tmp
+          df -h $WORK
+          du -sh $WORK
 
       - name: Build Docker Image
         if: steps.check.outputs.passed == 'true'
@@ -153,11 +152,10 @@ jobs:
       - name: Show final disk usage summary
         if: always()
         run: |
-          echo "=== Final Disk Usage (df -h) ==="
-          df -h
-          echo ""
-          echo "=== Top 20 largest directories after run ==="
-          sudo du -xh /home /usr /var /opt /tmp --max-depth=2 2>/dev/null | sort -hr | head -20
+          echo "Disk usage of /tmp and $WORK:"
+          df -h /tmp
+          df -h $WORK
+          du -sh $WORK
 
       - name: Validate Docker Image
         if: steps.check.outputs.passed == 'true'
