@@ -61,6 +61,7 @@ func createDefaultConfig() component.Config {
 			Separator: "\n",
 		},
 		Encodings:     Encodings{},
+		Compression:   "",
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 	}
 }

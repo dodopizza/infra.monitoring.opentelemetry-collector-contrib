@@ -48,6 +48,12 @@ The following settings can be optionally configured and have default values:
 - append_blob: configures append blob behavior. When enabled, telemetry data is appended to a single blob instead of creating new blobs. This can be useful for aggregating data or reducing the number of blobs created.
   - enabled (default `false`): determines whether to use append blob mode.
   - separator (default `\n`): string to insert between appended data blocks.
+- `compression` (default = "" which means no compression): Compression algorithm to use before uploading data to blob storage.
+  - Supported values: `gzip` or empty for no compression
+  - When enabled, compressed files will have `.gz` extension appended to blob name (e.g., `logs_15_04_05.json.gz`)
+  - **Not compatible with `append_blob.enabled = true`**. Validation will fail if both are enabled.
+  - Azure Data Explorer (Kusto) natively supports gzip decompression during ingestion
+  - Recommended for reducing storage costs and improving upload performance
 - `retry_on_failure`
   - `enabled` (default = true)
   - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
@@ -112,3 +118,26 @@ When `append_blob` is enabled:
 - New data will be appended to existing blobs rather than creating new ones
 - The configured separator will be inserted between data blocks
 - If the blob doesn't exist, it will be created automatically
+
+### Compression
+
+Example configuration with gzip compression:
+
+```yaml
+exporters:
+  azureblob:
+    url: "https://<your-account>.blob.core.windows.net/"
+    compression: gzip  # Enable gzip compression
+    container:
+      logs: "logs"
+      metrics: "metrics"
+      traces: "traces"
+    auth:
+      type: "connection_string"
+      connection_string: "DefaultEndpointsProtocol=https;AccountName=<your-account>;AccountKey=<account-key>;EndpointSuffix=core.windows.net"
+```
+
+This configuration will compress telemetry data before uploading and produce blob names like:
+- `logs/2006/01/02/logs_15_04_05.json.gz`
+- `metrics/2006/01/02/metrics_15_04_05.json.gz`
+- `traces/2006/01/02/traces_15_04_05.json.gz`

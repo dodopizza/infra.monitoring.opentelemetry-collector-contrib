@@ -5,6 +5,7 @@ package azureblobexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -336,6 +337,10 @@ func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal, telemetryDa
 		blobName = fmt.Sprintf("%s_%d", now.Format(format), randomInRange(0, int(e.config.BlobNameFormat.SerialNumRange)))
 	}
 
+	if e.config.Compression.IsCompressed() {
+		blobName += ".gz"
+	}
+
 	return blobName, nil
 }
 
@@ -399,6 +404,11 @@ func (e *azureBlobExporter) consumeData(ctx context.Context, telemetryData any, 
 		}
 		err = e.client.AppendBlock(ctx, containerName, blobName, data, nil)
 	} else {
+		data, err = e.compressData(data)
+		if err != nil {
+			return fmt.Errorf("failed to compress data: %w", err)
+		}
+
 		blobContentReader := bytes.NewReader(data)
 		_, err = e.client.UploadStream(ctx, containerName, blobName, blobContentReader, nil)
 	}
@@ -427,4 +437,23 @@ type readSeekCloserWrapper struct {
 
 func (readSeekCloserWrapper) Close() error {
 	return nil
+}
+
+func (e *azureBlobExporter) compressData(data []byte) ([]byte, error) {
+	if !e.config.Compression.IsCompressed() {
+		return data, nil
+	}
+
+	var buf bytes.Buffer
+	gzipWriter := gzip.NewWriter(&buf)
+
+	if _, err := gzipWriter.Write(data); err != nil {
+		return nil, fmt.Errorf("failed to write compressed data: %w", err)
+	}
+
+	if err := gzipWriter.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close gzip writer: %w", err)
+	}
+
+	return buf.Bytes(), nil
 }

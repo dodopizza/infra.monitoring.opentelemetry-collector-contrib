@@ -4,6 +4,8 @@
 package azureblobexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter"
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"io"
@@ -19,6 +21,7 @@ import (
 	"github.com/tj/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.uber.org/zap/zaptest"
@@ -371,4 +374,128 @@ func TestExporterAppendBlobError(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to upload data: append error")
 	mockClient.AssertExpectations(t)
+}
+
+func TestCompressData(t *testing.T) {
+	logger := zaptest.NewLogger(t)
+
+	tests := []struct {
+		name        string
+		compression configcompression.Type
+		data        []byte
+		shouldError bool
+	}{
+		{
+			name:        "no compression",
+			compression: "",
+			data:        []byte("test data"),
+			shouldError: false,
+		},
+		{
+			name:        "gzip compression",
+			compression: configcompression.TypeGzip,
+			data:        []byte("test data that should be compressed"),
+			shouldError: false,
+		},
+		{
+			name:        "empty data with gzip",
+			compression: configcompression.TypeGzip,
+			data:        []byte{},
+			shouldError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &Config{
+				Compression: tt.compression,
+			}
+
+			ae := newAzureBlobExporter(c, logger, pipeline.SignalLogs)
+			compressed, err := ae.compressData(tt.data)
+
+			if tt.shouldError {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			switch tt.compression {
+			case "":
+				// No compression, data should be unchanged
+				assert.Equal(t, tt.data, compressed)
+			case configcompression.TypeGzip:
+				// Verify data is actually compressed by decompressing it
+				reader, err := gzip.NewReader(bytes.NewReader(compressed))
+				require.NoError(t, err)
+				defer reader.Close()
+
+				decompressed, err := io.ReadAll(reader)
+				require.NoError(t, err)
+				assert.Equal(t, tt.data, decompressed)
+
+				// Verify compressed data is smaller or equal (for very small data it might not compress)
+				if len(tt.data) > 100 {
+					assert.LessOrEqual(t, len(compressed), len(tt.data))
+				}
+			}
+		})
+	}
+}
+
+func TestGenerateBlobNameWithCompression(t *testing.T) {
+	logger := zaptest.NewLogger(t)
+
+	tests := []struct {
+		name                     string
+		compression              configcompression.Type
+		serialNumBeforeExtension bool
+		expectedSuffix           string
+	}{
+		{
+			name:                     "no compression with serial before extension",
+			compression:              "",
+			serialNumBeforeExtension: true,
+			expectedSuffix:           ".json",
+		},
+		{
+			name:                     "gzip compression with serial before extension",
+			compression:              configcompression.TypeGzip,
+			serialNumBeforeExtension: true,
+			expectedSuffix:           ".json.gz",
+		},
+		{
+			name:                     "no compression with serial after extension",
+			compression:              "",
+			serialNumBeforeExtension: false,
+			expectedSuffix:           "",
+		},
+		{
+			name:                     "gzip compression with serial after extension",
+			compression:              configcompression.TypeGzip,
+			serialNumBeforeExtension: false,
+			expectedSuffix:           ".gz",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &Config{
+				Compression: tt.compression,
+				BlobNameFormat: BlobNameFormat{
+					LogsFormat:               "2006/01/02/logs_15_04_05.json",
+					SerialNumBeforeExtension: tt.serialNumBeforeExtension,
+					SerialNumRange:           10000,
+				},
+			}
+
+			ae := newAzureBlobExporter(c, logger, pipeline.SignalLogs)
+			logs := testdata.GenerateLogsTwoLogRecordsSameResource()
+			blobName, err := ae.generateBlobName(pipeline.SignalLogs, logs)
+
+			require.NoError(t, err)
+			assert.True(t, strings.HasSuffix(blobName, tt.expectedSuffix), "blob name %s should end with %s", blobName, tt.expectedSuffix)
+		})
+	}
 }
