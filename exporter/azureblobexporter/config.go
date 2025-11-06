@@ -7,6 +7,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configretry"
 )
 
@@ -94,6 +95,8 @@ type Config struct {
 	// Encoding extension to apply for logs/metrics/traces. If present, overrides the marshaler configuration option and format.
 	Encodings Encodings `mapstructure:"encodings"`
 
+	Compression configcompression.Type `mapstructure:"compression"`
+
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 }
 
@@ -131,6 +134,10 @@ func (c *Config) Validate() error {
 
 	if c.Formats.Traces != formatTypeJSON && c.Formats.Traces != formatTypeProto && c.Formats.Traces != formatTypeJSONL {
 		return errors.New("unknown traces format type: " + c.Formats.Traces)
+	}
+
+	if c.Compression.IsCompressed() && c.AppendBlob.Enabled {
+		return errors.New("compression cannot be used with append_blob mode")
 	}
 
 	return nil

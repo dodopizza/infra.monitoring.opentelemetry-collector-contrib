@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -56,6 +57,7 @@ func TestLoadConfig(t *testing.T) {
 					Traces:  formatTypeJSON,
 				},
 				Encodings:     Encodings{},
+				Compression:   "",
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				AppendBlob: AppendBlob{
 					Enabled:   false,
@@ -88,7 +90,12 @@ func TestLoadConfig(t *testing.T) {
 					Traces:  formatTypeProto,
 				},
 				Encodings:     Encodings{},
+				Compression:   "",
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				AppendBlob: AppendBlob{
+					Enabled:   false,
+					Separator: "\n",
+				},
 			},
 		},
 		{
@@ -117,6 +124,7 @@ func TestLoadConfig(t *testing.T) {
 					Traces:  formatTypeJSON,
 				},
 				Encodings:     Encodings{},
+				Compression:   "",
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				AppendBlob: AppendBlob{
 					Enabled:   false,
@@ -152,6 +160,7 @@ func TestLoadConfig(t *testing.T) {
 					Traces:  formatTypeJSON,
 				},
 				Encodings:     Encodings{},
+				Compression:   "",
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				AppendBlob: AppendBlob{
 					Enabled:   false,
@@ -184,6 +193,7 @@ func TestLoadConfig(t *testing.T) {
 					Traces:  formatTypeJSON,
 				},
 				Encodings:     Encodings{},
+				Compression:   "",
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				AppendBlob: AppendBlob{
 					Enabled:   false,
@@ -228,6 +238,89 @@ func TestLoadConfig(t *testing.T) {
 			}
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestCompressionValidation(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		config      *Config
+		expectedErr string
+	}{
+		{
+			name: "compression with append_blob enabled should fail",
+			config: &Config{
+				URL: "https://test.blob.core.windows.net/",
+				Auth: Authentication{
+					Type:             ConnectionString,
+					ConnectionString: "test",
+				},
+				Compression: configcompression.TypeGzip,
+				AppendBlob: AppendBlob{
+					Enabled: true,
+				},
+				Formats: &Formats{
+					Logs:    formatTypeJSON,
+					Metrics: formatTypeJSON,
+					Traces:  formatTypeJSON,
+				},
+			},
+			expectedErr: "compression cannot be used with append_blob mode",
+		},
+		{
+			name: "compression without append_blob should succeed",
+			config: &Config{
+				URL: "https://test.blob.core.windows.net/",
+				Auth: Authentication{
+					Type:             ConnectionString,
+					ConnectionString: "test",
+				},
+				Compression: configcompression.TypeGzip,
+				AppendBlob: AppendBlob{
+					Enabled: false,
+				},
+				Formats: &Formats{
+					Logs:    formatTypeJSON,
+					Metrics: formatTypeJSON,
+					Traces:  formatTypeJSON,
+				},
+			},
+			expectedErr: "",
+		},
+		{
+			name: "no compression with append_blob should succeed",
+			config: &Config{
+				URL: "https://test.blob.core.windows.net/",
+				Auth: Authentication{
+					Type:             ConnectionString,
+					ConnectionString: "test",
+				},
+				Compression: "",
+				AppendBlob: AppendBlob{
+					Enabled: true,
+				},
+				Formats: &Formats{
+					Logs:    formatTypeJSON,
+					Metrics: formatTypeJSON,
+					Traces:  formatTypeJSON,
+				},
+			},
+			expectedErr: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if tt.expectedErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedErr)
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
 }
