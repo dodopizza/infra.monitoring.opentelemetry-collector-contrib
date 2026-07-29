@@ -1,3 +1,7 @@
+## ARCHIVED
+
+Раньше здесь был форк opentelemetry collector'а, с нашими модификациями для более удобной загрузки в Kusto. Superseded by https://github.com/dodopizza/infra.monitoring.kusto-telemetry-exporter
+
 ---
 
 <p align="center">
